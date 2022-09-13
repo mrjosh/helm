@@ -16,7 +16,11 @@ limitations under the License.
 
 package support
 
-import "fmt"
+import (
+	"fmt"
+
+	"helm.sh/helm/v3/pkg/engine"
+)
 
 // Severity indicates the severity of a Message.
 const (
@@ -66,11 +70,27 @@ func (l *Linter) RunLinterRule(severity int, path string, err error) bool {
 	}
 
 	if err != nil {
-		l.Messages = append(l.Messages, NewMessage(severity, path, err))
 
-		if severity > l.HighestSeverity {
-			l.HighestSeverity = severity
+		errs, ok := err.(*engine.LintError)
+		if ok {
+
+			for _, er := range errs.Errors() {
+				l.Messages = append(l.Messages, NewMessage(severity, path, er))
+				if severity > l.HighestSeverity {
+					l.HighestSeverity = severity
+				}
+			}
+
+		} else {
+
+			l.Messages = append(l.Messages, NewMessage(severity, path, err))
+
+			if severity > l.HighestSeverity {
+				l.HighestSeverity = severity
+			}
 		}
+
 	}
+
 	return err == nil
 }

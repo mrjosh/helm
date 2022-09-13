@@ -228,11 +228,15 @@ func (e Engine) renderWithReferences(tpls, referenceTpls map[string]renderable) 
 	keys := sortTemplates(tpls)
 	referenceKeys := sortTemplates(referenceTpls)
 
+	errs := make([]error, 0)
 	for _, filename := range keys {
 		r := tpls[filename]
 		if _, err := t.New(filename).Parse(r.tpl); err != nil {
-			return map[string]string{}, cleanupParseError(filename, err)
+			errs = append(errs, cleanupParseError(filename, err))
 		}
+	}
+	if len(errs) > 0 {
+		return map[string]string{}, &LintError{errors: errs}
 	}
 
 	// Adding the reference templates to the template context
